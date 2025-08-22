@@ -29,6 +29,11 @@ jar {
     exclude '**/log4j2.xml'  // don't put it inside the JAR file, we'll have it external in config dir
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
 // Download context sensitive help and/or source code for eclipse and idea
 eclipse {
     classpath {
@@ -37,8 +42,8 @@ eclipse {
     }
     jdt {
         //if you want to alter the java versions (by default they are configured with gradle java plugin settings):
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
+        sourceCompatibility = 11
+        targetCompatibility = 11
     }
 }
 
@@ -46,6 +51,8 @@ idea {
     module {
         downloadJavadoc = true
         downloadSources = true
+        sourceCompatibility = 11
+        targetCompatibility = 11
     }
 }
 
@@ -79,6 +86,9 @@ dependencies {
     implementation group: 'com.solace', name: 'solace-opentelemetry-jcsmp-integration', version: '1.1.0'
     implementation group: 'io.opentelemetry', name: 'opentelemetry-exporter-otlp', version: '1.47.+'
     implementation group: 'io.opentelemetry.semconv', name: 'opentelemetry-semconv', version: '1.29.+'
+
+    // Solace SERDES Dependencies
+    implementation group: 'com.solace', name: 'solace-serdes', version: '1.+'
 }
 
 sourceSets {
@@ -123,7 +133,8 @@ def scripts = [
     'topicToQueueMapping':'com.solace.samples.jcsmp.features.TopicToQueueMapping',
     'dtDirectPublisher':'com/solace/samples/jcsmp/features/distributedtracing/DirectPublisherWithManualInstrumentation',
     'GuaranteedSubscriberWithSettle':'com.solace.samples.jcsmp.patterns.GuaranteedSubscriberWithSettle',
-    'dtDirectSubscriber':'com/solace/samples/jcsmp/features/distributedtracing/DirectSubscriberWithManualInstrumentation'
+    'dtDirectSubscriber':'com/solace/samples/jcsmp/features/distributedtracing/DirectSubscriberWithManualInstrumentation',
+    'HelloWorldJCSMPStringSerdes':'com.solace.samples.jcsmp.features.serdes.generic.HelloWorldJCSMPStringSerdes'
 ]
 // for each of those array entries, let's make a start script
 scripts.each() { scriptName, className ->
