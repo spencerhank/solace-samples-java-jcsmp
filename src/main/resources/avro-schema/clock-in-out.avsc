@@ -1,0 +1,30 @@
+{
+  "namespace": "com.solace.samples.serdes.avro.schema",
+  "type": "record",
+  "name": "ClockInOut",
+  "fields": [
+    {
+      "name": "region_code",
+      "type": "string",
+      "doc": "region code for clock in or out"
+    },
+    {
+      "name": "store_id",
+      "type": "string",
+      "doc": "Store identifier"
+    },
+    {
+      "name": "employee_id",
+      "type": "string",
+      "doc": "Employee ID for who clocked in or out"
+    },
+    {
+      "name": "datetime",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Clock time"
+    }
+  ]
+}

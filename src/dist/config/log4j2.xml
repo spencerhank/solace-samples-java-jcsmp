@@ -23,6 +23,14 @@
     <!-- or override this file completely by specifying your own: 'export JAVA_OPTS=-Dlog4j2.configurationFile=log4j2-override.xml' -->
     <Logger name="com.solacesystems" level="${sys:jcsmp_api_log_level:-info}"/>
     <Logger name="com.solace.samples" level="${sys:jcsmp_samples_log_level:-info}"/>
+    
+    <!-- SERDES and Schema Registry network logging -->
+    <!-- e.g. '-Dschema_registry_network_log_level=debug', or use the Gradle env variable: 'export JAVA_OPTS=-Dschema_registry_network_log_level=debug' -->
+    <Logger name="io.netty" level="${sys:schema_registry_network_log_level:-warn}" additivity="false">
+      <AppenderRef ref="console"/>
+      <AppenderRef ref="logfile"/>
+    </Logger>
+    
     <Root level="${sys:root_log_level:-info}">
       <AppenderRef ref="console"/>
       <AppenderRef ref="logfile"/>

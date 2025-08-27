@@ -3,6 +3,7 @@ plugins {
     id 'application'
     id 'idea'
     id 'eclipse'
+    id 'org.jsonschema2pojo' version '1.2.1'
 }
 
 // Don't need these tasks, so disabling them. Makes it possible to avoid
@@ -65,6 +66,10 @@ repositories {
     }
 }
 
+configurations {
+    avroTools
+}
+
 dependencies {
     // Solace Messaging API for Java Dependencies
     implementation group: 'com.solacesystems', name: 'sol-jcsmp', version: '10.+'
@@ -89,6 +94,60 @@ dependencies {
 
     // Solace SERDES Dependencies
     implementation group: 'com.solace', name: 'solace-serdes', version: '1.+'
+    implementation(platform("com.solace:solace-schema-registry-serdes-bom:1.+"))
+    implementation("com.solace:solace-schema-registry-avro-serde")
+    implementation("com.solace:solace-schema-registry-jsonschema-serde")
+
+    // Avro tools for schema code generation
+    avroTools group: 'org.apache.avro', name: 'avro-tools', version: '1.12.0'
+}
+
+// Define generated source directories for schema compilation
+def avroDestDir = layout.buildDirectory.dir("generated-sources/avro").get().asFile
+def jsonDestDir = layout.buildDirectory.dir("generated-sources/jsonschema").get().asFile
+
+task generateAvro(type: JavaExec) {
+    description = 'Generates Java classes from Avro schema files'
+    group = 'build'
+
+    classpath = configurations.avroTools
+    mainClass = 'org.apache.avro.tool.Main'
+
+    def avroSrcDir = "${projectDir}/src/main/resources/avro-schema"
+    def userSchemaFile = file("${avroSrcDir}/user.avsc")
+
+    // Create output directory if it doesn't exist
+    doFirst {
+        file(avroDestDir).mkdirs()
+
+        // Make sure the file exists before trying to compile it
+        if (!userSchemaFile.exists()) {
+            throw new GradleException("Schema file ${userSchemaFile} does not exist!")
+        }
+    }
+
+    args = [
+            'compile',
+            'schema',
+            userSchemaFile.absolutePath,
+            avroDestDir
+    ]
+
+    inputs.file(userSchemaFile)
+    outputs.dir(avroDestDir)
+}
+
+// Configure the jsonschema2pojo extension
+jsonSchema2Pojo {
+    source = files("${projectDir}/src/main/resources/json-schema")
+    targetDirectory = jsonDestDir
+    targetPackage = 'com.solace.samples.serdes.jsonschema'
+    propertyWordDelimiters = ['_'] as char[]
+}
+
+compileJava {
+    dependsOn generateAvro
+    dependsOn generateJsonSchema2Pojo
 }
 
 sourceSets {
@@ -96,6 +155,8 @@ sourceSets {
         java {
             srcDir 'src/main/java'
             srcDir 'src/dist/config'  // so eclipse can find the log4j2.xml file
+            srcDir avroDestDir        // generated Avro classes
+            srcDir jsonDestDir        // generated JSON Schema classes
         }
     }
 }
@@ -106,35 +167,48 @@ tasks.withType(JavaCompile).all {
 
 // used to make the various start/run scripts
 def scripts = [
-    'HelloWorld':'com.solace.samples.jcsmp.HelloWorld',
-    'DirectProcessor':'com.solace.samples.jcsmp.patterns.DirectProcessor',
-    'DirectPublisher':'com.solace.samples.jcsmp.patterns.DirectPublisher',
-    'DirectReplier':'com.solace.samples.jcsmp.patterns.DirectReplier',
-    'DirectRequestorBlocking':'com.solace.samples.jcsmp.patterns.DirectRequestorBlocking',
-    'DirectSubscriber':'com.solace.samples.jcsmp.patterns.DirectSubscriber',
-    'GuaranteedProcessor':'com.solace.samples.jcsmp.patterns.GuaranteedProcessor',
-    'GuaranteedPublisher':'com.solace.samples.jcsmp.patterns.GuaranteedPublisher',
-    'GuaranteedSubscriber':'com.solace.samples.jcsmp.patterns.GuaranteedSubscriber',
-    'TransactedProcessor':'com.solace.samples.jcsmp.patterns.TransactedProcessor',
-    'featureMessageSelectorsOnQueue':'com.solace.samples.jcsmp.features.MessageSelectorsOnQueue',
-    'featureMessageTTLAndDeadMessageQueue':'com.solace.samples.jcsmp.features.MessageTTLAndDeadMessageQueue',
-    'featureQueueProvisionAndBrowse':'com.solace.samples.jcsmp.features.QueueProvisionAndBrowse',
-    'featureQueueProvisionAndRequestActiveFlowIndication':'com.solace.samples.jcsmp.features.QueueProvisionAndRequestActiveFlowIndication',
-    'featureTransactions':'com.solace.samples.jcsmp.features.Transactions',
-    'featureMessageReplay':'com.solace.samples.jcsmp.features.MessageReplay',
-    'featureSecureSession':'com.solace.samples.jcsmp.features.SecureSession',
-    'topicPublisher':'com.solace.samples.jcsmp.features.TopicPublisher',
-    'topicSubscriber':'com.solace.samples.jcsmp.features.TopicSubscriber',
-    'queueProducer':'com.solace.samples.jcsmp.features.QueueProducer',
-    'queueConsumer':'com.solace.samples.jcsmp.features.QueueConsumer',
-    'basicRequestor':'com.solace.samples.jcsmp.features.BasicRequestor',
-    'basicReplier':'com.solace.samples.jcsmp.features.BasicReplier',
-    'confirmedPublish':'com.solace.samples.jcsmp.features.ConfirmedPublish',
-    'topicToQueueMapping':'com.solace.samples.jcsmp.features.TopicToQueueMapping',
-    'dtDirectPublisher':'com/solace/samples/jcsmp/features/distributedtracing/DirectPublisherWithManualInstrumentation',
-    'GuaranteedSubscriberWithSettle':'com.solace.samples.jcsmp.patterns.GuaranteedSubscriberWithSettle',
-    'dtDirectSubscriber':'com/solace/samples/jcsmp/features/distributedtracing/DirectSubscriberWithManualInstrumentation',
-    'HelloWorldJCSMPStringSerdes':'com.solace.samples.jcsmp.features.serdes.generic.HelloWorldJCSMPStringSerdes'
+        'HelloWorld':'com.solace.samples.jcsmp.HelloWorld',
+        'DirectProcessor':'com.solace.samples.jcsmp.patterns.DirectProcessor',
+        'DirectPublisher':'com.solace.samples.jcsmp.patterns.DirectPublisher',
+        'DirectReplier':'com.solace.samples.jcsmp.patterns.DirectReplier',
+        'DirectRequestorBlocking':'com.solace.samples.jcsmp.patterns.DirectRequestorBlocking',
+        'DirectSubscriber':'com.solace.samples.jcsmp.patterns.DirectSubscriber',
+        'GuaranteedProcessor':'com.solace.samples.jcsmp.patterns.GuaranteedProcessor',
+        'GuaranteedPublisher':'com.solace.samples.jcsmp.patterns.GuaranteedPublisher',
+        'GuaranteedSubscriber':'com.solace.samples.jcsmp.patterns.GuaranteedSubscriber',
+        'TransactedProcessor':'com.solace.samples.jcsmp.patterns.TransactedProcessor',
+        'featureMessageSelectorsOnQueue':'com.solace.samples.jcsmp.features.MessageSelectorsOnQueue',
+        'featureMessageTTLAndDeadMessageQueue':'com.solace.samples.jcsmp.features.MessageTTLAndDeadMessageQueue',
+        'featureQueueProvisionAndBrowse':'com.solace.samples.jcsmp.features.QueueProvisionAndBrowse',
+        'featureQueueProvisionAndRequestActiveFlowIndication':'com.solace.samples.jcsmp.features.QueueProvisionAndRequestActiveFlowIndication',
+        'featureTransactions':'com.solace.samples.jcsmp.features.Transactions',
+        'featureMessageReplay':'com.solace.samples.jcsmp.features.MessageReplay',
+        'featureSecureSession':'com.solace.samples.jcsmp.features.SecureSession',
+        'topicPublisher':'com.solace.samples.jcsmp.features.TopicPublisher',
+        'topicSubscriber':'com.solace.samples.jcsmp.features.TopicSubscriber',
+        'queueProducer':'com.solace.samples.jcsmp.features.QueueProducer',
+        'queueConsumer':'com.solace.samples.jcsmp.features.QueueConsumer',
+        'basicRequestor':'com.solace.samples.jcsmp.features.BasicRequestor',
+        'basicReplier':'com.solace.samples.jcsmp.features.BasicReplier',
+        'confirmedPublish':'com.solace.samples.jcsmp.features.ConfirmedPublish',
+        'topicToQueueMapping':'com.solace.samples.jcsmp.features.TopicToQueueMapping',
+        'dtDirectPublisher':'com/solace/samples/jcsmp/features/distributedtracing/DirectPublisherWithManualInstrumentation',
+        'GuaranteedSubscriberWithSettle':'com.solace.samples.jcsmp.patterns.GuaranteedSubscriberWithSettle',
+        'dtDirectSubscriber':'com/solace/samples/jcsmp/features/distributedtracing/DirectSubscriberWithManualInstrumentation',
+        'HelloWorldJCSMPStringSerdes':'com.solace.samples.jcsmp.features.serdes.generic.HelloWorldJCSMPStringSerdes',
+        'HelloWorldJCSMPAvroSerde':'com.solace.samples.jcsmp.features.serdes.avro.HelloWorldJCSMPAvroSerde',
+        'AvroSerializeProducer':'com.solace.samples.jcsmp.features.serdes.avro.AvroSerializeProducer',
+        'AvroDeserializeConsumer':'com.solace.samples.jcsmp.features.serdes.avro.AvroDeserializeConsumer',
+        'AvroSerializeProducerSpecificRecord':'com.solace.samples.jcsmp.features.serdes.avro.AvroSerializeProducerSpecificRecord',
+        'AvroDeserializeConsumerSpecificRecord':'com.solace.samples.jcsmp.features.serdes.avro.AvroDeserializeConsumerSpecificRecord',
+        'AvroSerdesRequestor':'com.solace.samples.jcsmp.features.serdes.avro.AvroSerdesRequestor',
+        'AvroSerdesReplier':'com.solace.samples.jcsmp.features.serdes.avro.AvroSerdesReplier',
+        'JsonSchemaSerializeProducer':'com.solace.samples.jcsmp.features.serdes.jsonschema.JsonSchemaSerializeProducer',
+        'JsonSchemaDeserializeConsumerToPojo':'com.solace.samples.jcsmp.features.serdes.jsonschema.JsonSchemaDeserializeConsumerToPojo',
+        'JsonSchemaDeserializeConsumerToJsonNode':'com.solace.samples.jcsmp.features.serdes.jsonschema.JsonSchemaDeserializeConsumerToJsonNode',
+        'HelloWorldJCSMPJsonSchemaSerde':'com.solace.samples.jcsmp.features.serdes.jsonschema.HelloWorldJCSMPJsonSchemaSerde',
+        'JsonSchemaSerdesRequestor':'com.solace.samples.jcsmp.features.serdes.jsonschema.JsonSchemaSerdesRequestor',
+        'JsonSchemaSerdesReplier':'com.solace.samples.jcsmp.features.serdes.jsonschema.JsonSchemaSerdesReplier'
 ]
 // for each of those array entries, let's make a start script
 scripts.each() { scriptName, className ->

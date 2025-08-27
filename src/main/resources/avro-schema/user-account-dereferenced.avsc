@@ -1,0 +1,21 @@
+{
+  "namespace": "com.solace.samples.serdes.avro.schema",
+  "type": "record",
+  "name": "UserAccount",
+  "fields": [
+    {"name": "accountId", "type": "string"},
+    {
+      "name": "user",
+      "type": {
+        "type": "record",
+        "name": "User",
+        "fields": [
+          {"name": "id", "type": "string"},
+          {"name": "name", "type": "string"},
+          {"name": "email", "type": "string"}
+        ]
+      }
+    },
+    {"name": "isActive", "type": "boolean"}
+  ]
+}

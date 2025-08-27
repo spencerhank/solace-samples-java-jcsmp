@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UserAccount",
+  "type": "object",
+  "javaType": "com.solace.samples.serdes.jsonschema.UserAccount",
+  "additionalProperties": false,
+  "properties": {
+    "accountId": {
+      "type": "string"
+    },
+    "user": {
+      "$comment": "When JSON Schema Validation is enabled, the value of $ref must be a valid URI that contains the schema reference name in it.",
+      "$ref": "user.json"
+    },
+    "isActive": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "accountId",
+    "user",
+    "isActive"
+  ]
+}

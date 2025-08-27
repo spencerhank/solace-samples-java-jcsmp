@@ -19,9 +19,22 @@ See the individual tutorials for details:
 - [Confirmed Delivery](https://tutorials.solace.dev/jcsmp/confirmed-delivery): Learn how to confirm that your messages are received by a Solace message router.
 - [Topic to Queue Mapping](https://tutorials.solace.dev/jcsmp/topic-to-queue-mapping): Learn how to map existing topics to Solace queues.
 
+## SERDES and Schema Registry Samples
+
+This repository also includes samples demonstrating serialization and deserialization (SERDES) with Solace Schema Registry support:
+
+- **JSON Schema SERDES**: Learn how to serialize and deserialize messages using JSON Schema validation
+- **Avro SERDES**: Learn how to work with Avro serialization using both generic records and specific record types
+- **Generic SERDES**: Basic string serialization examples
+
+For detailed information about SERDES samples, Schema Registry setup, and schema upload instructions, see the [SERDES README](src/main/java/com/solace/samples/jcsmp/features/serdes/README.md).
+
 ## Prerequisites
 
 This tutorial requires the Solace Java API library. Download the Java API library to your computer from [here](solace.com/downloads/).
+
+# Requirements
+- Java 11 or later
 
 ## Build the Samples
 
